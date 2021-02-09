@@ -1,5 +1,7 @@
 /jsonSchema
 /build
+/lib
+/.settings.xml
 
 
 

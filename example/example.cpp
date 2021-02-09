@@ -6,10 +6,13 @@
 using namespace nghttp2::asio_http2;
 using namespace nghttp2::asio_http2::server;
 
-int main(int argc, char *argv[]) {
-  try {
+int main(int argc, char *argv[])
+{
+  try
+  {
     // Check command line arguments.
-    if (argc < 4) {
+    if (argc < 4)
+    {
       std::cerr
           << "Usage: asio-sv <address> <port> <threads> [<private-key-file> "
           << "<cert-file>]\n";
@@ -27,6 +30,18 @@ int main(int argc, char *argv[]) {
     server.num_threads(num_threads);
 
     server.handle("/", [](const request &req, const response &res) {
+      //typedef std::function<void(const uint8_t *, std::size_t)> data_cb;
+      req.on_data([](const uint8_t *ch, std::size_t len) {
+        if (ch)
+        {
+          std::string out((char*)ch, len);
+          std::cout << "receive data :" << out << std::endl;
+        }
+        else
+        {
+          std::cout << "receive rst " << std::endl;
+        }
+      });
       res.write_head(200, {{"foo", {"bar"}}});
       res.end("hello, world\n");
     });
@@ -37,7 +52,8 @@ int main(int argc, char *argv[]) {
     server.handle("/push", [](const request &req, const response &res) {
       boost::system::error_code ec;
       auto push = res.push(ec, "GET", "/push/1");
-      if (!ec) {
+      if (!ec)
+      {
         push->write_head(200);
         push->end("server push FTW!\n");
       }
@@ -58,7 +74,8 @@ int main(int argc, char *argv[]) {
       });
 
       timer->async_wait([&res, closed](const boost::system::error_code &ec) {
-        if (ec || *closed) {
+        if (ec || *closed)
+        {
           return;
         }
 
@@ -77,7 +94,8 @@ int main(int argc, char *argv[]) {
         auto n = std::min(len, *left);
         std::copy_n(body.c_str() + (body.size() - *left), n, dst);
         *left -= n;
-        if (*left == 0) {
+        if (*left == 0)
+        {
           *data_flags |=
               NGHTTP2_DATA_FLAG_EOF | NGHTTP2_DATA_FLAG_NO_END_STREAM;
           // RFC 3230 Instance Digests in HTTP.  The digest value is
@@ -90,22 +108,29 @@ int main(int argc, char *argv[]) {
       });
     });
 
-    if (argc >= 6) {
+    if (argc >= 6)
+    {
       boost::asio::ssl::context tls(boost::asio::ssl::context::sslv23);
       tls.use_private_key_file(argv[4], boost::asio::ssl::context::pem);
       tls.use_certificate_chain_file(argv[5]);
 
       configure_tls_context_easy(ec, tls);
 
-      if (server.listen_and_serve(ec, tls, addr, port)) {
-        std::cerr << "error: " << ec.message() << std::endl;
-      }
-    } else {
-      if (server.listen_and_serve(ec, addr, port)) {
+      if (server.listen_and_serve(ec, tls, addr, port))
+      {
         std::cerr << "error: " << ec.message() << std::endl;
       }
     }
-  } catch (std::exception &e) {
+    else
+    {
+      if (server.listen_and_serve(ec, addr, port))
+      {
+        std::cerr << "error: " << ec.message() << std::endl;
+      }
+    }
+  }
+  catch (std::exception &e)
+  {
     std::cerr << "exception: " << e.what() << "\n";
   }
 
