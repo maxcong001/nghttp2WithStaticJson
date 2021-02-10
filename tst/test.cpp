@@ -28,7 +28,7 @@ using namespace nghttp2::asio_http2::client;
 int i = 0;
 int main(int argc, char *argv[])
 {
-   vector<session> sessions;
+  // vector<session> sessions;
   try
   {
     /*
@@ -60,17 +60,16 @@ int main(int argc, char *argv[])
                                   : session(io_service, host, service);
     int i = 0;
     bool flag = false;
-    std::thread th([&flag, &i, &io_service,  &uri, &scheme, &tls_ctx, &host, &service]() {
+    std::thread th([&flag, &sess, &i, &io_service, &uri, &scheme, &tls_ctx, &host, &service]() {
       while (1)
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         if (flag)
         {
           i++;
           for (int j = 0; j < 1; j++)
           {
-            auto sess = scheme == "https" ? session(io_service, tls_ctx, host, service)
-                                          : session(io_service, host, service);
+
             io_service.post([&i, &sess, &io_service, &uri]() {
               boost::system::error_code ec;
               std::cout << "now try to send " << i << "st message" << std::endl;
@@ -93,7 +92,9 @@ int main(int argc, char *argv[])
                     std::cerr << std::endl;
                   });
                 });
-                req->on_close([&sess](uint32_t error_code) { sess.shutdown(); });
+                req->on_close([&sess](uint32_t error_code) { //sess.shutdown();
+                  std::cout << " req->on_close is called " << std::endl;
+                });
               }
             });
           }
