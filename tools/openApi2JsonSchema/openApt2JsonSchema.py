@@ -114,7 +114,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
                 schema_file.write(json.dumps(specification, indent=2))
         except Exception as e:
             print("An error occured processing %s: %s" % (kind, e))
-
+'''
     with open("%s/all.json" % output, "w") as all_file:
         print("Generating schema for all types")
         contents = {"oneOf": []}
@@ -128,7 +128,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
                 )
             )
         all_file.write(json.dumps(contents, indent=2))
-
+'''
 
 def iteritems(d):
     if hasattr(dict, "iteritems"):
@@ -218,8 +218,10 @@ def change_dict_values(d, prefix, version):
                     new_v.append(change_dict_values(x, prefix, version))
             elif isinstance(v, str):
                 if k == "$ref":
-                    spList = v.split('/')
-                    new_v = "#/"+spList[len(spList)-1]+".json"
+                    ##spList = v.split('/')
+                    #new_v = "#/"+spList[len(spList)-1]+".json"
+
+                    #new_v = spList[len(spList)-1]+".json#/"+
             else:
                 new_v = v
             new[k] = new_v
