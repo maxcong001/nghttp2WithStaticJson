@@ -5,7 +5,7 @@ info:
   title: 'Nudm_UECM'
   description: |
     Nudm Context Management Service.
-    © 2020, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC).
+    ï¿½ 2020, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC).
     All rights reserved.
 
 externalDocs:
@@ -969,7 +969,7 @@ paths:
 
   /{ueId}/registrations/loation:
     get:
-      summary: retrieve the target UE’s location information
+      summary: retrieve the target UEï¿½s location information
       operationId: GetLocationInfo
       tags:
         - UE Location Information retrieval
