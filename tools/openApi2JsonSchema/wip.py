@@ -10,6 +10,8 @@ import traceback
 from jsonref import JsonRef  # type: ignore
 import click
 
+schemaFileCache = {}
+
 
 @click.command()
 @click.option(
@@ -94,23 +96,23 @@ def process(output, schema, location="components/schemas"):
 def getSchema(schema, location):
     print("getSchema: Downloading schema, schema is : %s, location is : %s" %
           (schema, location))
-    if sys.version_info < (3, 0):
-        response = urllib.urlopen(schema)
-    else:
-        if os.path.isfile(schema):
-            schema = "file://" + os.path.realpath(schema)
-        req = urllib.request.Request(schema)
-        response = urllib.request.urlopen(req)
-    #print("getSchema: Parsing schema, schema is : %s" % schema)
-    # Note that JSON is valid YAML, so we can use the YAML parser whether
-    # the schema is stored in JSON or YAML
-    data = yaml.load(response.read(), Loader=yaml.SafeLoader)
 
-    types = []
-    #print("getSchema: Generating individual schemas : %s" % json.dumps(data, indent=2))
+    if (schemaFileCache.has_key(schema) == False):
+        if sys.version_info < (3, 0):
+            response = urllib.urlopen(schema)
+        else:
+            if os.path.isfile(schema):
+                schema = "file://" + os.path.realpath(schema)
+            req = urllib.request.Request(schema)
+            response = urllib.request.urlopen(req)
+        #print("getSchema: Parsing schema, schema is : %s" % schema)
+        # Note that JSON is valid YAML, so we can use the YAML parser whether
+        # the schema is stored in JSON or YAML
+        data = yaml.load(response.read(), Loader=yaml.SafeLoader)
+        schemaFileCache[schema] = data
 
     loc = location
-    components = data
+    components = schemaFileCache[schema]
     for place in loc:
         if (components.has_key(place)):
             components = components[place]
@@ -145,7 +147,7 @@ def change_dict_values(d, location, schemaFileName):
                         spList = v.split('/')
                         print("the schema is not local, schema name is : %s" %
                               spList[0][0:-1])
-                        
+
                         if len(spList) < 2:
                             print(
                                 "invalid ref, the split of ref should be larger than two, ref value is : "
@@ -168,10 +170,10 @@ def change_dict_values(d, location, schemaFileName):
                         schName = schemaFileName
                         loc = v.split('/')[1:]
                     new_v = getSchema(schName, loc)
-                    new_v = change_dict_values(new_v, loc,schName)
+                    new_v = change_dict_values(new_v, loc, schName)
                     return new_v
-                    #new.append(new_v)
-                    #continue
+                    # new.append(new_v)
+                    # continue
                 else:
                     new_v = v
             else:
