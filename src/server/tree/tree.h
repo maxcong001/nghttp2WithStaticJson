@@ -25,13 +25,27 @@ namespace radixtree
         int size;
     };
 
+    enum class httpMethod{
+        GET = 0,
+        POST,
+        PUT,
+        DELETE,
+        PATCH,
+        HEAD,
+        OPTIONS,
+        TRACE,
+        CONNECT,
+        HTTPMETHODMAX
+
+    };
+
     struct Request
     {
         string path;
-        string method;
+        httpMethod method;
         Params params;
 
-        Request(const string &path, const string &method);
+        Request( string &&path,  httpMethod method);
     };
 
     typedef void (*HandleFunc)(Request *req);
@@ -39,7 +53,7 @@ namespace radixtree
 
     struct Handler
     {
-        string method;
+        httpMethod method;
         HandleFunc handler;
     };
 
@@ -55,8 +69,8 @@ namespace radixtree
         explicit RadixTreeNode(const string &path);
         ~RadixTreeNode();
 
-        HandleFunc getHandler(const string &method);
-        int addHandler(HandleFunc handler, const vector<string> &methods);
+        HandleFunc getHandler(httpMethod method);
+        int addHandler(HandleFunc handler, const vector<httpMethod> &methods);
 
         RadixTreeNode *insertChild(
             char index,
@@ -75,8 +89,8 @@ namespace radixtree
         int insert(
             const string &path,
             HandleFunc handler,
-            const vector<string> &methods);
-        ParseResult get(const string &path, const string &method);
+            const vector<httpMethod> &methods);
+        ParseResult get(const string &path, httpMethod method);
 
     private:
         RadixTreeNode *root;
