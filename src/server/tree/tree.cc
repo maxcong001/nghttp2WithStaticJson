@@ -9,14 +9,9 @@ namespace radixtree
         return i == -1 ? str.size() : i;
     }
 
-    Request::Request(string &&path, httpMethod method)
+    Request::Request(const string &path, const string &method)
     {
-        if (path.back() == kSlash)
-        {
-            path.pop_back();
-        }
-        this->path = std::move(path);
-
+        this->path = path;
         this->method = method;
     }
 
@@ -31,7 +26,7 @@ namespace radixtree
             delete c;
     }
 
-    HandleFunc RadixTreeNode::getHandler(httpMethod method)
+    HandleFunc RadixTreeNode::getHandler(const string &method)
     {
         for (auto &h : this->handlers)
         {
@@ -45,7 +40,7 @@ namespace radixtree
 
     int RadixTreeNode::addHandler(
         HandleFunc handler,
-        const vector<httpMethod> &methods)
+        const vector<string> &methods)
     {
 
         for (auto &m : methods)
@@ -105,7 +100,7 @@ namespace radixtree
     int RadixTree::insert(
         const string &path,
         HandleFunc handler,
-        const vector<httpMethod> &methods)
+        const vector<string> &methods)
     {
 
         auto root = this->root;
@@ -211,7 +206,7 @@ namespace radixtree
         return code;
     }
 
-    ParseResult RadixTree::get(const string &path, httpMethod method)
+    ParseResult RadixTree::get(const string &path, const string &method)
     {
         Params params = Params{new Parameter[root->maxParams]};
 
