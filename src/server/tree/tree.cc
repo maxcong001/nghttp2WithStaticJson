@@ -9,9 +9,13 @@ namespace radixtree
         return i == -1 ? str.size() : i;
     }
 
-    Request::Request(const string &path, const string &method)
+    Request::Request( string &&path, const string &method)
     {
-        this->path = path;
+        if (path.back() == kSlash)
+        {
+            path.pop_back();
+        }
+        this->path = std::move(path);
         this->method = method;
     }
 
@@ -172,7 +176,7 @@ namespace radixtree
                 }
                 else
                 {
-                    auto j = 0UL, m = root->path.size();
+                    std::size_t j = 0, m = root->path.size();
 
                     for (; i < n && j < m && path[i] == root->path[j]; ++i, ++j)
                     {

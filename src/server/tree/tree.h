@@ -31,7 +31,7 @@ namespace radixtree
         string method;
         Params params;
 
-        Request(const string &path, const string &method);
+        Request( string &&path, const string &method);
     };
 
     typedef void (*HandleFunc)(Request *req);
