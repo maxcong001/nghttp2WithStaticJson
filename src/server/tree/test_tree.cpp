@@ -13,13 +13,16 @@ using radixtree::Request;
 
 HandleFunc handle = [](Request *req) {
     cout << "Handled! The params are:" << endl;
-    for (auto i = 0; i < req->params.size; ++i)
-        cout << req->params.params[i].first << ": "
-             << req->params.params[i].second << endl;
+
+    for (auto i : req->params)
+    {
+        cout << i.first << ": "
+             << i.second << endl;
+    }
 };
 
 RadixTree tree;
-auto req = new Request("/user/Lime/male/25", "GET");
+auto req = new Request("/user/Lime/male/25/test/", "GET");
 
 void testWork()
 {
@@ -29,7 +32,7 @@ void testWork()
     cout << tree.insert("/user", handle, {"GET"}) << endl;
     cout << tree.insert("/user/:name", handle, {"GET"}) << endl;
     cout << tree.insert("/user/:name", handle, {"GET"}) << endl;
-    cout << tree.insert("/user/:name/:sex/:age", handle, {"GET"}) << endl;
+    cout << tree.insert("/user/:name/:sex/:age/test", handle, {"GET"}) << endl;
     cout << tree.insert("/user/lime", handle, {"GET"}) << endl;
     cout << tree.insert("/src/*filename", handle, {"GET"}) << endl;
     cout << tree.insert("/src/image.png", handle, {"GET"}) << endl;
@@ -44,7 +47,7 @@ void testWork()
 void testPerformance()
 {
     auto start = clock();
-    for (auto i = 0; i < 10000000; i++)
+    for (auto i = 0; i < 100; i++)
         tree.get("/user/Lime/male/25", "GET");
     auto end = clock();
 
