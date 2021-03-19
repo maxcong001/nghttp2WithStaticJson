@@ -15,54 +15,57 @@ using radixtree::request;
 using radixtree::response;
 namespace cinatra
 {
-		//for is_detective
+	//for is_detective
 
-		struct nonesuch {
-			nonesuch() = delete;
-			~nonesuch() = delete;
-			nonesuch(const nonesuch&) = delete;
-			void operator=(const nonesuch&) = delete;
-		};
+	struct nonesuch
+	{
+		nonesuch() = delete;
+		~nonesuch() = delete;
+		nonesuch(const nonesuch &) = delete;
+		void operator=(const nonesuch &) = delete;
+	};
 
-		template<class Default, class AlwaysVoid,
-			template<class...> class Op, class... Args>
-		struct detector {
-			using value_t = std::false_type;
-			using type = Default;
-		};
+	template <class Default, class AlwaysVoid,
+			  template <class...> class Op, class... Args>
+	struct detector
+	{
+		using value_t = std::false_type;
+		using type = Default;
+	};
 
+	template <class Default, template <class...> class Op, class... Args>
+	struct detector<Default, std::void_t<Op<Args...>>, Op, Args...>
+	{
+		using value_t = std::true_type;
+		using type = Op<Args...>;
+	};
 
-		template<class Default, template<class...> class Op, class... Args>
-		struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
-			using value_t = std::true_type;
-			using type = Op<Args...>;
-		};
+	template <template <class...> class Op, class... Args>
+	using is_detected = typename detector<nonesuch, void, Op, Args...>::value_t;
 
-		template<template<class...> class Op, class... Args>
-		using is_detected = typename detector<nonesuch, void, Op, Args...>::value_t;
+	template <template <class...> class Op, class... Args>
+	using detected_t = typename detector<nonesuch, void, Op, Args...>::type;
 
-		template<template<class...> class Op, class... Args>
-		using detected_t = typename detector<nonesuch, void, Op, Args...>::type;
+	template <class T, typename... Args>
+	using has_before_t = decltype(std::declval<T>().before(std::declval<Args>()...));
 
-		template<class T, typename... Args>
-		using has_before_t = decltype(std::declval<T>().before(std::declval<Args>()...));
-
-		template<class T, typename... Args>
-		using has_after_t = decltype(std::declval<T>().after(std::declval<Args>()...));
-		template<typename T, typename... Args>
+	template <class T, typename... Args>
+	using has_after_t = decltype(std::declval<T>().after(std::declval<Args>()...));
+	template <typename T, typename... Args>
 	using has_before = is_detected<has_before_t, T, Args...>;
 
-	template<typename T, typename... Args>
+	template <typename T, typename... Args>
 	using has_after = is_detected<has_after_t, T, Args...>;
 
 	template <typename... Args, typename F, std::size_t... Idx>
-	constexpr void for_each_l(std::tuple<Args...>& t, F&& f, std::index_sequence<Idx...>) {
+	constexpr void for_each_l(std::tuple<Args...> &t, F &&f, std::index_sequence<Idx...>)
+	{
 		(std::forward<F>(f)(std::get<Idx>(t)), ...);
 	}
 
-
-		template <typename... Args, typename F, std::size_t... Idx>
-	constexpr void for_each_r(std::tuple<Args...>& t, F&& f, std::index_sequence<Idx...>) {
+	template <typename... Args, typename F, std::size_t... Idx>
+	constexpr void for_each_r(std::tuple<Args...> &t, F &&f, std::index_sequence<Idx...>)
+	{
 		constexpr auto size = sizeof...(Idx);
 		(std::forward<F>(f)(std::get<size - Idx - 1>(t)), ...);
 	}
@@ -109,7 +112,7 @@ namespace cinatra
 	{
 	public:
 		template <http_method... Is, typename Function, typename... Ap>
-		std::enable_if_t<!std::is_member_function_pointer_v<Function>> register_handler(const std::string& name, Function &&f, const Ap &...ap)
+		std::enable_if_t<!std::is_member_function_pointer_v<Function>> register_handler(const std::string &name, Function &&f, const Ap &...ap)
 		{
 			if constexpr (sizeof...(Is) > 0)
 			{
