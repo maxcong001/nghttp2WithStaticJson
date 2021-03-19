@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
-
+#include <functional>
 namespace radixtree
 {
 
@@ -18,29 +18,36 @@ namespace radixtree
     const char kSlash = '/';
 
     typedef pair<string, string> Parameter;
-    struct Request
-    {
-        string path;
-        string method;
-        std::vector<Parameter> params;
 
-        Request(string &&path, const string &method)
+    class request
+    {
+    public:
+        void setPara(std::vector<Parameter> &&arr)
         {
-            if (path.back() == kSlash)
-            {
-                path.pop_back();
-            }
-            this->path = std::move(path);
-            this->method = method;
+            para = arr;
         }
+        void print()
+        {
+            cout << "Handled! The params are:" << endl;
+
+            for (auto i : para)
+            {
+                cout << i.first << ": "
+                     << i.second << endl;
+            }
+        }
+        std::vector<Parameter> para;
+    };
+    class response
+    {
     };
 
-    typedef void (*HandleFunc)(Request *req);
+    typedef std::function<void(request &, response &)> HandleFunc;
     typedef tuple<bool, HandleFunc, std::vector<Parameter>> ParseResult;
 
     struct Handler
     {
-        string method;
+        std::string_view method;
         HandleFunc handler;
     };
 
@@ -63,7 +70,7 @@ namespace radixtree
                 delete c;
         }
 
-        HandleFunc getHandler(const string &method)
+        HandleFunc getHandler(std::string_view method)
         {
             for (auto &h : this->handlers)
             {
@@ -74,13 +81,13 @@ namespace radixtree
             }
             return nullptr;
         }
-        int addHandler(HandleFunc handler, const vector<string> &methods)
+        int addHandler(HandleFunc handler, const std::vector<std::string_view> &methods)
         {
             for (auto &m : methods)
             {
                 auto oldHandler = this->getHandler(m);
-
-                if (oldHandler && oldHandler != handler)
+                // already got the handler, just return
+                if (oldHandler)
                     return -1;
 
                 this->handlers.push_back(Handler{m, handler});
@@ -128,7 +135,7 @@ namespace radixtree
         {
             delete this->root;
         }
-        int insert(const string &path, HandleFunc handler, const vector<string> &methods)
+        int insert(std::string_view path, HandleFunc handler, const std::vector<std::string_view> &methods)
         {
             auto root = this->root;
             int i = 0, n = path.size(), paramCount = 0, code = 0;
@@ -229,9 +236,9 @@ namespace radixtree
 
             return code;
         }
-        ParseResult get(const string &path, const string &method)
+        ParseResult &&get(const string &path, const string &method)
         {
-            std::vector<Parameter> params; 
+            std::vector<Parameter> params;
             params.reserve(root->maxParams);
 
             auto root = this->root;
