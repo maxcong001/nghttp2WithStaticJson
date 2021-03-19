@@ -5,17 +5,99 @@
 #include <string>
 #include <string_view>
 
-
 #include "tree.h"
-#include "utils.hpp"
-
+#include "function_traits.hpp"
 
 using radixtree::HandleFunc;
+using radixtree::ParseResult;
 using radixtree::RadixTree;
-
-
+using radixtree::request;
+using radixtree::response;
 namespace cinatra
 {
+		//for is_detective
+
+		struct nonesuch {
+			nonesuch() = delete;
+			~nonesuch() = delete;
+			nonesuch(const nonesuch&) = delete;
+			void operator=(const nonesuch&) = delete;
+		};
+
+		template<class Default, class AlwaysVoid,
+			template<class...> class Op, class... Args>
+		struct detector {
+			using value_t = std::false_type;
+			using type = Default;
+		};
+
+
+		template<class Default, template<class...> class Op, class... Args>
+		struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
+			using value_t = std::true_type;
+			using type = Op<Args...>;
+		};
+
+		template<template<class...> class Op, class... Args>
+		using is_detected = typename detector<nonesuch, void, Op, Args...>::value_t;
+
+		template<template<class...> class Op, class... Args>
+		using detected_t = typename detector<nonesuch, void, Op, Args...>::type;
+
+		template<class T, typename... Args>
+		using has_before_t = decltype(std::declval<T>().before(std::declval<Args>()...));
+
+		template<class T, typename... Args>
+		using has_after_t = decltype(std::declval<T>().after(std::declval<Args>()...));
+		template<typename T, typename... Args>
+	using has_before = is_detected<has_before_t, T, Args...>;
+
+	template<typename T, typename... Args>
+	using has_after = is_detected<has_after_t, T, Args...>;
+
+	template <typename... Args, typename F, std::size_t... Idx>
+	constexpr void for_each_l(std::tuple<Args...>& t, F&& f, std::index_sequence<Idx...>) {
+		(std::forward<F>(f)(std::get<Idx>(t)), ...);
+	}
+
+
+		template <typename... Args, typename F, std::size_t... Idx>
+	constexpr void for_each_r(std::tuple<Args...>& t, F&& f, std::index_sequence<Idx...>) {
+		constexpr auto size = sizeof...(Idx);
+		(std::forward<F>(f)(std::get<size - Idx - 1>(t)), ...);
+	}
+
+	enum class http_method
+	{
+		UNKNOW,
+		DEL,
+		GET,
+		HEAD,
+		POST,
+		PUT,
+		CONNECT,
+		OPTIONS,
+		TRACE
+	};
+	constexpr inline auto GET = http_method::GET;
+	constexpr inline auto POST = http_method::POST;
+	constexpr inline auto DEL = http_method::DEL;
+	constexpr inline auto HEAD = http_method::HEAD;
+	constexpr inline auto PUT = http_method::PUT;
+	constexpr inline auto CONNECT = http_method::CONNECT;
+	constexpr inline auto TRACE = http_method::TRACE;
+	constexpr inline auto OPTIONS = http_method::OPTIONS;
+	using namespace std::string_view_literals;
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::DEL>) noexcept { return "DELETE"sv; }
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::GET>) noexcept { return "GET"sv; }
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::HEAD>) noexcept { return "HEAD"sv; }
+
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::POST>) noexcept { return "POST"sv; }
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::PUT>) noexcept { return "PUT"sv; }
+
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::CONNECT>) noexcept { return "CONNECT"sv; }
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::OPTIONS>) noexcept { return "OPTIONS"sv; }
+	constexpr auto type_to_name(std::integral_constant<http_method, http_method::TRACE>) noexcept { return "TRACE"sv; }
 	namespace
 	{
 		constexpr char DOT = '.';
@@ -27,7 +109,7 @@ namespace cinatra
 	{
 	public:
 		template <http_method... Is, typename Function, typename... Ap>
-		std::enable_if_t<!std::is_member_function_pointer_v<Function>> register_handler(std::string_view name, Function &&f, const Ap &...ap)
+		std::enable_if_t<!std::is_member_function_pointer_v<Function>> register_handler(const std::string& name, Function &&f, const Ap &...ap)
 		{
 			if constexpr (sizeof...(Is) > 0)
 			{
@@ -36,7 +118,7 @@ namespace cinatra
 			}
 			else
 			{
-				register_nonmember_func(name, {0}, std::forward<Function>(f), ap...);
+				register_nonmember_func(name, {}, std::forward<Function>(f), ap...);
 			}
 		}
 
@@ -59,7 +141,7 @@ namespace cinatra
 		}
 
 		//elimate exception, resut type bool: true, success, false, failed
-		bool route(std::string_view method, const std::string url, request &req, response &res)
+		bool route(const std::string &method, const std::string url, request &req, response &res)
 		{
 
 			auto ret = tree.get(url, method);
@@ -72,7 +154,8 @@ namespace cinatra
 			req.setPara(std::move(std::get<2>(ret)));
 			// invoke handler
 
-			std::get<2>(ret)(req, res);
+			(std::get<1>(ret))(req, res);
+			return true;
 		}
 
 	private:
@@ -91,9 +174,9 @@ namespace cinatra
 		}
 
 		template <typename Function, typename... AP>
-		void register_nonmember_func(std::string_view raw_name, const std::vector<std::string_view> &arr, Function f, const AP &...ap)
+		void register_nonmember_func(const std::string raw_name, const std::vector<std::string_view> &arr, Function f, const AP &...ap)
 		{
-			tree.insert(raw_name, std::bind(&http_router::invoke<Function, AP...>, this, std::placeholders::_1, std::placeholders::_2, std::move(f), ap...), arr)
+			tree.insert(raw_name, std::bind(&http_router::invoke<Function, AP...>, this, std::placeholders::_1, std::placeholders::_2, std::move(f), ap...), arr);
 		}
 
 		template <typename Function, typename... AP>
@@ -126,8 +209,7 @@ namespace cinatra
 		void register_member_func(std::string_view raw_name, const std::vector<std::string_view> &arr, Function f, Self self, const AP &...ap)
 		{
 
-			this->map_invokers_[raw_name] = {arr, std::bind(&http_router::invoke_mem<Function, Self, AP...>, this,
-															std::placeholders::_1, std::placeholders::_2, f, self, ap...)};
+			tree.insert(raw_name, std::bind(&http_router::invoke_mem<Function, Self, AP...>, this, std::placeholders::_1, std::placeholders::_2, f, self, ap...));
 		}
 
 		template <typename Function, typename Self, typename... AP>

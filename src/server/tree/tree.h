@@ -5,6 +5,8 @@
 #include <vector>
 #include <tuple>
 #include <functional>
+#include <iostream>
+#include <string_view>
 namespace radixtree
 {
 
@@ -28,12 +30,12 @@ namespace radixtree
         }
         void print()
         {
-            cout << "Handled! The params are:" << endl;
+            std::cout << "Handled! The params are:" << std::endl;
 
             for (auto i : para)
             {
-                cout << i.first << ": "
-                     << i.second << endl;
+                std::cout << i.first << ": "
+                     << i.second << std::endl;
             }
         }
         std::vector<Parameter> para;
@@ -135,7 +137,7 @@ namespace radixtree
         {
             delete this->root;
         }
-        int insert(std::string_view path, HandleFunc handler, const std::vector<std::string_view> &methods)
+        int insert(const std::string& path, HandleFunc handler, const std::vector<std::string_view> &methods)
         {
             auto root = this->root;
             int i = 0, n = path.size(), paramCount = 0, code = 0;
@@ -236,7 +238,7 @@ namespace radixtree
 
             return code;
         }
-        ParseResult &&get(const string &path, const string &method)
+        ParseResult get(const string &path, const string &method)
         {
             std::vector<Parameter> params;
             params.reserve(root->maxParams);
@@ -277,7 +279,7 @@ namespace radixtree
         }
 
     private:
-        int find(const string &str, char target, int start)
+        int find( std::string_view str, char target, int start)
         {
             auto i = str.find(target, start);
             return i == -1 ? str.size() : i;
